@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns:metadata="http://www.mulesoft.org/schema/mule/metadata" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:anypoint-mq="http://www.mulesoft.org/schema/mule/anypoint-mq" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/apikit" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:spring="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/apikit http://www.mulesoft.org/schema/mule/apikit/current/mule-apikit.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
+http://www.mulesoft.org/schema/mule/anypoint-mq http://www.mulesoft.org/schema/mule/anypoint-mq/current/mule-anypoint-mq.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd">
+    <http:listener-config name="order-fulfillment-api-httpListenerConfig" host="0.0.0.0" port="8081" doc:name="HTTP Listener Configuration"/>
+    <apikit:config name="order-fulfillment-api-config" raml="order-fulfillment-api.raml" consoleEnabled="false" doc:name="Router"/>
+    <http:request-config name="HTTP_Request_Configuration" host="tailor-ful-sys-api.cloudhub.io" port="80" basePath="/api" doc:name="HTTP Request Configuration"/>
+    <anypoint-mq:config name="Anypoint_MQ_Configuration" doc:name="Anypoint MQ Configuration">
+        <anypoint-mq:provider url="https://mq-us-east-1.anypoint.mulesoft.com/api/v1" clientId="4ddbf4077e7a4959b9b18c0daa350f26" clientSecret="eD73621213C3482db3Dd7eF5F2e94537"/>
+    </anypoint-mq:config>
+    <flow name="order-fulfillment-api-main">
+        <http:listener config-ref="order-fulfillment-api-httpListenerConfig" path="/api/*" doc:name="HTTP"/>
+        <apikit:router config-ref="order-fulfillment-api-config" doc:name="APIkit Router"/>
+        <exception-strategy ref="order-fulfillment-api-apiKitGlobalExceptionMapping" doc:name="Reference Exception Strategy"/>
+    </flow>
+    <flow name="order-fulfillment-api-console">
+        <http:listener config-ref="order-fulfillment-api-httpListenerConfig" path="/console/*" doc:name="HTTP"/>
+        <apikit:console config-ref="order-fulfillment-api-config" doc:name="APIkit Console"/>
+    </flow>
+    <flow name="post:/orders:application/json:order-fulfillment-api-config">
+        <flow-ref name="CreateOrderInSAP" doc:name="Flow Reference"/>
+        <dw:transform-message doc:name="Transform Message">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+{
+	status: payload.status,
+	orderId: payload.orderId,
+	message: payload.message,
+	email: "anthony.chaseendran+mq@mulesoft.com"
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <anypoint-mq:publish config-ref="Anypoint_MQ_Configuration" destination="order-email-notification-queue" doc:name="Anypoint MQ"/>
+    </flow>
+    <flow name="CreateOrderInSAP">
+        <dw:transform-message doc:name="Transform Message">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+{  
+        "price":"125.43",
+        "status":"Draft",
+        "orderItems":
+        {  
+            "pickupItems": [  
+                {  
+                    "orderItemId":"88668866-2c6d-4fa6-9e17-4b2c42e0f051",
+                    "productId":"eb8c8ca7-3c42-4489-a820-3aa138430b75",
+                    "productName":"Smart Slim Micro Stripe Shirt",
+                    "locationId":"1c9a20dc-c585-42fd-ac1a-1216085b76d2",
+                    "deliveryMethod":"PICKUP",
+                    "quantity":1
+                },
+                {  
+                    "orderItemId":"dfc25820-c37d-456c-8867-4a89a51b7f75",
+                    "productId":"7c9be8ad-0791-4362-b195-a53dcca4e1d7",
+                    "productName":"Men's Regular Fit V-Neck Knit Sweater",
+                    "locationId":"1c9a20dc-c585-42fd-ac1a-1216085b76d2",
+                    "deliveryMethod":"PICKUP",
+                    "quantity":2
+                } 
+            ],
+            "shipmentItems": [  
+                {  
+                    "orderItemId":"3c1eb223-811c-4e86-8ea3-4a06a002a79a",
+                    "productId":"cd67cd8a-8901-48c5-890b-0a21f4a0f8ad",
+                    "productName":"Men's Chino Jogger Pants",
+                    "locationId":"7307024a-7e63-11e7-bb31-be2e44b06b34",
+                    "deliveryMethod":"SHIPMENT",
+                    "quantity":3
+                }
+            ],
+            "partnersItems": [  
+                {  
+                    "orderItemId":"fc3d4900-c5ac-4649-8bc8-cbbef4fe8fde",
+                    "productId":"e1c515f9-102d-4830-b353-18fe48065732",
+                    "productName":"Uniforms Modern Fit Short Sleeve Polo Shirt",
+                    "locationId":"730704d4-7e63-11e7-bb31-be2e44b06b34",
+                    "deliveryMethod":"SHIPMENT",
+                    "quantity":1
+                }
+            ]
+        }
+      }]]></dw:set-payload>
+        </dw:transform-message>
+        <http:request config-ref="HTTP_Request_Configuration" path="/orders/customer/12" method="POST" doc:name="Post Order to Fulfillment API" metadata:id="3f4e7c7c-5db1-4370-b31a-65fdd3c81535"/>
+        <dw:transform-message doc:name="Transform Message" metadata:id="b688e762-60eb-4cdd-9500-e4755d36dbbc">
+            <dw:input-payload mimeType="application/json"/>
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+{
+	"status": "created",
+	"orderId": payload.orderId,
+	"message": null
+}]]></dw:set-payload>
+        </dw:transform-message>
+    </flow>
+    <apikit:mapping-exception-strategy name="order-fulfillment-api-apiKitGlobalExceptionMapping">
+        <apikit:mapping statusCode="404">
+            <apikit:exception value="org.mule.module.apikit.exception.NotFoundException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property"/>
+            <set-payload value="{ &quot;message&quot;: &quot;Resource not found&quot; }" doc:name="Set Payload"/>
+        </apikit:mapping>
+        <apikit:mapping statusCode="405">
+            <apikit:exception value="org.mule.module.apikit.exception.MethodNotAllowedException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property"/>
+            <set-payload value="{ &quot;message&quot;: &quot;Method not allowed&quot; }" doc:name="Set Payload"/>
+        </apikit:mapping>
+        <apikit:mapping statusCode="415">
+            <apikit:exception value="org.mule.module.apikit.exception.UnsupportedMediaTypeException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property"/>
+            <set-payload value="{ &quot;message&quot;: &quot;Unsupported media type&quot; }" doc:name="Set Payload"/>
+        </apikit:mapping>
+        <apikit:mapping statusCode="406">
+            <apikit:exception value="org.mule.module.apikit.exception.NotAcceptableException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property"/>
+            <set-payload value="{ &quot;message&quot;: &quot;Not acceptable&quot; }" doc:name="Set Payload"/>
+        </apikit:mapping>
+        <apikit:mapping statusCode="400">
+            <apikit:exception value="org.mule.module.apikit.exception.BadRequestException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property"/>
+            <set-payload value="{ &quot;message&quot;: &quot;Bad request&quot; }" doc:name="Set Payload"/>
+        </apikit:mapping>
+    </apikit:mapping-exception-strategy>
+</mule>

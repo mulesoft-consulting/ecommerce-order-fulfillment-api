@@ -1,0 +1,8 @@
+#%RAML 1.0 DataType
+properties:
+  customerId: string
+  orderItems: 
+    type: array
+    items: !include orderItem.raml
+  price: string
+  status: string
