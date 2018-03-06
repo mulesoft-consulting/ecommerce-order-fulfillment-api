@@ -9,7 +9,11 @@ types:
   Location: !include datatypes/location.raml  
 
 /orders:
+  description: Create an order and send notification
+  displayName: Create Order
   post:
+    description: Send order to Fulfillment and Notification systems
+    displayName: Create new order
     body: 
       application/json: 
         type: Order
