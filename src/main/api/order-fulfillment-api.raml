@@ -1,6 +1,7 @@
 #%RAML 1.0
 title: Order Fulfillment API
 version: v1.0
+mediaType: [application/json]
 baseUri: https://mocksvc.mulesoft.com/mocks/55a8d638-e536-432f-9d21-e3099301316f/mocks/e0d30c40-6b98-4461-b545-9819bc2349f0/api # baseUri: https://mocksvc.mulesoft.com/mocks/e0d30c40-6b98-4461-b545-9819bc2349f0/api
 
 types:
@@ -8,18 +9,17 @@ types:
   Order: !include datatypes/order.raml
   Location: !include datatypes/location.raml  
 
+resourceTypes: 
+  orderType: !include resourceTypes/order.raml  
+
 /orders:
-  description: Create an order and send notification
-  displayName: Create Order
+  type: orderType
   post:
-    description: Send order to Fulfillment and Notification systems
-    displayName: Create new order
     body: 
-      application/json: 
-        type: Order
-        example: !include examples/order_post_request.raml
-    responses:
-      201: 
+      type: Order
+      example: !include examples/order_post_request.raml
+    responses: 
+      201:
         body: 
-          application/json: 
-            example: !include examples/order_post_response.raml
+          example: !include examples/order_post_response.raml
+      

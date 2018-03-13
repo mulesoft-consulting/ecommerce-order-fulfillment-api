@@ -1,0 +1,12 @@
+#%RAML 1.0 ResourceType
+description: Create an <<resourcePathName | !singularize>> and send notification
+displayName: Create <<resourcePathName | !singularize>>
+post:
+  description: Send <<resourcePathName | !singularize>> to Fulfillment and Notification systems
+  displayName: Create new <<resourcePathName | !singularize>>
+  headers: 
+    Accept:
+  responses:
+    201: 
+      headers: 
+        Content-Type:
