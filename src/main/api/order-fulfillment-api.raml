@@ -1,8 +1,8 @@
 #%RAML 1.0
+baseUri: https://mocksvc.mulesoft.com/mocks/5179c0f6-64a1-4388-b392-c95eb253d388 # 
 title: Order Fulfillment API
 version: v1.0
 mediaType: [application/json]
-baseUri: https://mocksvc.mulesoft.com/mocks/55a8d638-e536-432f-9d21-e3099301316f/mocks/e0d30c40-6b98-4461-b545-9819bc2349f0/api # baseUri: https://mocksvc.mulesoft.com/mocks/e0d30c40-6b98-4461-b545-9819bc2349f0/api
 
 types:
   OrderItem: !include datatypes/orderItem.raml
@@ -16,7 +16,7 @@ resourceTypes:
   type: orderType
   post:
     body: 
-      #type: Order
+      type: Order
       example: !include examples/order_post_request.raml
     responses: 
       201:

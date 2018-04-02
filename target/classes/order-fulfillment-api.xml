@@ -10,7 +10,7 @@ http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/m
 http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/current/mule-vm.xsd">
     <http:listener-config name="order-fulfillment-api-httpListenerConfig" host="0.0.0.0" port="8081" doc:name="HTTP Listener Configuration"/>
     <apikit:config name="order-fulfillment-api-config" raml="order-fulfillment-api.raml" consoleEnabled="false" doc:name="Router"/>
-    <http:request-config name="HTTP_Request_Configuration" host="tailor-ful-sys-api.cloudhub.io" port="80" basePath="/api" doc:name="HTTP Request Configuration"/>
+    <http:request-config name="HTTP_Request_Configuration" host="order-system-api-tailor.cloudhub.io" port="80" basePath="/api" doc:name="HTTP Request Configuration"/>
     <anypoint-mq:config name="Anypoint_MQ_Configuration" doc:name="Anypoint MQ Configuration">
         <anypoint-mq:provider url="https://mq-us-east-1.anypoint.mulesoft.com/api/v1" clientId="4ddbf4077e7a4959b9b18c0daa350f26" clientSecret="eD73621213C3482db3Dd7eF5F2e94537"/>
     </anypoint-mq:config>
@@ -25,108 +25,59 @@ http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/cu
         <apikit:console config-ref="order-fulfillment-api-config" doc:name="APIkit Console"/>
     </flow>
     <flow name="post:/orders:application/json:order-fulfillment-api-config">
-        <async processingStrategy="Queued_Asynchronous_Processing_Strategy" doc:name="Async">
-            <dw:transform-message doc:name="Transform Message">
-                <dw:set-payload><![CDATA[%dw 1.0
+        <dw:transform-message doc:name="Transform Message">
+            <dw:set-payload><![CDATA[%dw 1.0
 %output application/java
 ---
+payload]]></dw:set-payload>
+        </dw:transform-message>
+        <set-variable variableName="customerId" value="#[payload.customerId]" doc:name="Variable"/>
+        <dw:transform-message doc:name="Transform Message" metadata:id="01af9d31-857c-4ac1-a3b2-333ee6c33387">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+%function createProduct(row) {
+deliveryMethod: row.location.deliveryMethod,
+locationId: row.location.locationId,
+orderItemId: row.itemId,
+productId: row.productId,
+productName: row.name,
+quantity: row.quantity
+}
+---
 {
-	data: [
-		{
-			payload: payload
-		}
-	],
-	
-	destination: {
-		properties: {
-        	scope:"tailor",
-	     	type:"events",
-			table:"sampleEvent",
-	        queryParams:"sync=true&timestamp=eventTime&format=eventTime,timestamp,milliseconds"
-	  	}
+	price: payload.price,
+	status: "Draft",
+	orderId: payload.orderId,
+	orderItems: {
+		pickupItems: payload.orderItems filter ($.location.locationType == "STORE") map ((row, indexOfRow) -> {
+			(createProduct(row))
+		}),
+		shipmentItems: payload.orderItems filter ($.location.locationType == "WAREHOUSE") map ((row, indexOfRow) -> {
+			(createProduct(row))
+		}),
+		partnersItems: payload.orderItems filter ($.location.locationType == "PARTNER") map ((row, indexOfRow) -> {
+			(createProduct(row))
+		})
 	}
-	
 }]]></dw:set-payload>
-            </dw:transform-message>
-            <vm:outbound-endpoint exchange-pattern="one-way" path="SendToMeld" connector-ref="MeldVM" doc:name="VM"/>
-        </async>
-        <flow-ref name="CreateOrderInSAP" doc:name="CreateOrderInSAP"/>
+        </dw:transform-message>
+        <http:request config-ref="HTTP_Request_Configuration" path="/orders/customer/{customerId}" method="POST" doc:name="Post Order to Fulfillment API" metadata:id="3f4e7c7c-5db1-4370-b31a-65fdd3c81535">
+            <http:request-builder>
+                <http:uri-param paramName="customerId" value="#[flowVars.customerId]"/>
+            </http:request-builder>
+        </http:request>
         <dw:transform-message doc:name="Transform Message">
             <dw:set-payload><![CDATA[%dw 1.0
 %output application/json
 ---
 {
-	status: payload.status,
+	status: "created",
 	orderId: payload.orderId,
 	message: payload.message,
-	email: "anthony.chaseendran+mq@mulesoft.com"
+	email: "ecommerce.sfdc@gmail.com"
 }]]></dw:set-payload>
         </dw:transform-message>
         <anypoint-mq:publish config-ref="Anypoint_MQ_Configuration" destination="order-email-notification-queue" doc:name="Anypoint MQ"/>
-    </flow>
-    <flow name="CreateOrderInSAP">
-        <dw:transform-message doc:name="Transform Message">
-            <dw:set-payload><![CDATA[%dw 1.0
-%output application/json
----
-{  
-        "price":"125.43",
-        "status":"Draft",
-        "orderItems":
-        {  
-            "pickupItems": [  
-                {  
-                    "orderItemId":"88668866-2c6d-4fa6-9e17-4b2c42e0f051",
-                    "productId":"eb8c8ca7-3c42-4489-a820-3aa138430b75",
-                    "productName":"Smart Slim Micro Stripe Shirt",
-                    "locationId":"1c9a20dc-c585-42fd-ac1a-1216085b76d2",
-                    "deliveryMethod":"PICKUP",
-                    "quantity":1
-                },
-                {  
-                    "orderItemId":"dfc25820-c37d-456c-8867-4a89a51b7f75",
-                    "productId":"7c9be8ad-0791-4362-b195-a53dcca4e1d7",
-                    "productName":"Men's Regular Fit V-Neck Knit Sweater",
-                    "locationId":"1c9a20dc-c585-42fd-ac1a-1216085b76d2",
-                    "deliveryMethod":"PICKUP",
-                    "quantity":2
-                } 
-            ],
-            "shipmentItems": [  
-                {  
-                    "orderItemId":"3c1eb223-811c-4e86-8ea3-4a06a002a79a",
-                    "productId":"cd67cd8a-8901-48c5-890b-0a21f4a0f8ad",
-                    "productName":"Men's Chino Jogger Pants",
-                    "locationId":"7307024a-7e63-11e7-bb31-be2e44b06b34",
-                    "deliveryMethod":"SHIPMENT",
-                    "quantity":3
-                }
-            ],
-            "partnersItems": [  
-                {  
-                    "orderItemId":"fc3d4900-c5ac-4649-8bc8-cbbef4fe8fde",
-                    "productId":"e1c515f9-102d-4830-b353-18fe48065732",
-                    "productName":"Uniforms Modern Fit Short Sleeve Polo Shirt",
-                    "locationId":"730704d4-7e63-11e7-bb31-be2e44b06b34",
-                    "deliveryMethod":"SHIPMENT",
-                    "quantity":1
-                }
-            ]
-        }
-      }]]></dw:set-payload>
-        </dw:transform-message>
-        <http:request config-ref="HTTP_Request_Configuration" path="/orders/customer/12" method="POST" doc:name="Post Order to Fulfillment API" metadata:id="3f4e7c7c-5db1-4370-b31a-65fdd3c81535"/>
-        <dw:transform-message doc:name="Transform Message" metadata:id="b688e762-60eb-4cdd-9500-e4755d36dbbc">
-            <dw:input-payload mimeType="application/json"/>
-            <dw:set-payload><![CDATA[%dw 1.0
-%output application/json
----
-{
-	"status": "created",
-	"orderId": payload.orderId,
-	"message": null
-}]]></dw:set-payload>
-        </dw:transform-message>
     </flow>
     <apikit:mapping-exception-strategy name="order-fulfillment-api-apiKitGlobalExceptionMapping">
         <apikit:mapping statusCode="404">
