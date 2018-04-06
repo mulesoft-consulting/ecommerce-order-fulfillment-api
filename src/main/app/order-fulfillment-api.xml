@@ -61,6 +61,7 @@ quantity: row.quantity
 	}
 }]]></dw:set-payload>
         </dw:transform-message>
+        <logger message="#[payload]" level="INFO" doc:name="Logger"/>
         <http:request config-ref="HTTP_Request_Configuration" path="/orders/customer/{customerId}" method="POST" doc:name="Post Order to Fulfillment API" metadata:id="3f4e7c7c-5db1-4370-b31a-65fdd3c81535">
             <http:request-builder>
                 <http:uri-param paramName="customerId" value="#[flowVars.customerId]"/>
