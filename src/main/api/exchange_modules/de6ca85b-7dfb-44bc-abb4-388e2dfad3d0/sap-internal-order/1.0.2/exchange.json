@@ -1,0 +1,1 @@
+{"main":"sap-internal-order.raml","name":"SAP Internal Order","classifier":"raml-fragment","tags":["type"],"dependencies":[{"groupId":"de6ca85b-7dfb-44bc-abb4-388e2dfad3d0","assetId":"sap-order-item","version":"1.0.1"}],"groupId":"de6ca85b-7dfb-44bc-abb4-388e2dfad3d0","assetId":"sap-internal-order","version":"1.0.2"}
