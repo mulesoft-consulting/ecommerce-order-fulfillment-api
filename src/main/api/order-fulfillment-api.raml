@@ -11,6 +11,8 @@ types:
 
 resourceTypes: 
   orderType: !include exchange_modules/de6ca85b-7dfb-44bc-abb4-388e2dfad3d0/order-post-resource-type/1.0.0/order-post-resource-type.raml
+  statusResourceType: !include /exchange_modules/de6ca85b-7dfb-44bc-abb4-388e2dfad3d0/statusresource/1.0.1/statusresource.raml
+
 
 /orders:
   type: orderType
@@ -22,4 +24,28 @@ resourceTypes:
       201:
         body: 
           example: !include examples/order_post_response.raml
+  /{id}/status:
+    type: statusResourceType
+    get:
+      responses: 
+        200:
+          body:
+            example: !include examples/status_get_response.raml
+        400:
+          body:
+            example: !include examples/bad_request.raml
+        404:
+          body:
+            example: !include examples/order_not_found.raml
+    put:
+      responses: 
+        200:
+          body:
+            example: !include examples/status_get_response.raml
+        400:
+          body:
+            example: !include examples/bad_request.raml
+        404:
+          body:
+            example: !include examples/order_not_found.raml   
       
