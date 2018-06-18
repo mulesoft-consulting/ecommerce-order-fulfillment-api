@@ -5,18 +5,22 @@ version: v1.0
 mediaType: [application/json]
 
 types:
-  OrderItem: !include exchange_modules/de6ca85b-7dfb-44bc-abb4-388e2dfad3d0/sap-order-item/1.0.1/sap-order-item.raml
-  Order: !include exchange_modules/de6ca85b-7dfb-44bc-abb4-388e2dfad3d0/sap-internal-order/1.0.2/sap-internal-order.raml
-  Location: !include exchange_modules/de6ca85b-7dfb-44bc-abb4-388e2dfad3d0/location/1.0.0/location.raml
+  OrderItem: !include /exchange_modules/de6ca85b-7dfb-44bc-abb4-388e2dfad3d0/sap-order-item/1.0.2/sap-order-item.raml
+  Order: !include /exchange_modules/de6ca85b-7dfb-44bc-abb4-388e2dfad3d0/sap-internal-order/1.0.4/sap-internal-order.raml
+  Location: !include /exchange_modules/de6ca85b-7dfb-44bc-abb4-388e2dfad3d0/location/1.0.0/location.raml
 
 resourceTypes: 
-  orderType: !include exchange_modules/de6ca85b-7dfb-44bc-abb4-388e2dfad3d0/order-post-resource-type/1.0.0/order-post-resource-type.raml
+  orderType: !include /exchange_modules/de6ca85b-7dfb-44bc-abb4-388e2dfad3d0/order-post-resource-type/1.0.0/order-post-resource-type.raml
   statusResourceType: !include /exchange_modules/de6ca85b-7dfb-44bc-abb4-388e2dfad3d0/statusresource/1.0.1/statusresource.raml
+
+traits:
+  client-id-secured: !include /exchange_modules/com.mythical.retailer.corporateit.traits/client-id-secured-trait/1.0.1/client-id-secured.raml
 
 
 /orders:
   type: orderType
   post:
+    is: [client-id-secured]
     body: 
       type: Order
       example: !include examples/order_post_request.raml
@@ -27,6 +31,7 @@ resourceTypes:
   /{id}/status:
     type: statusResourceType
     get:
+      is: [client-id-secured]
       responses: 
         200:
           body:
@@ -38,6 +43,7 @@ resourceTypes:
           body:
             example: !include examples/order_not_found.raml
     put:
+      is: [client-id-secured]
       responses: 
         200:
           body:
